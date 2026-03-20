@@ -1,6 +1,7 @@
 import Radar from "../components/Radar";
 import VoiceControl from "../components/VoiceControl";
 import DroneStatus from "../components/DroneStatus";
+import TelemertyPanel from "../components/TelemertyPanel";
 import "../styles/Dashboard.css";
 
 export default function Dashboard() {
@@ -9,6 +10,7 @@ export default function Dashboard() {
       <Radar />
       <VoiceControl />
       <DroneStatus />
+      <TelemertyPanel />
     </div>
   );
 }
