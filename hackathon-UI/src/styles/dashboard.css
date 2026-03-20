@@ -1,0 +1,19 @@
+.dashboard {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: 2fr 1fr;
+  height: 100vh;
+  gap: 10px;
+  padding: 10px;
+   box-sizing: border-box;
+  background: black;
+}
+
+.dashboard > * {
+  border: 1px solid #00ffcc;
+  color: #00ffcc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+}
