@@ -1,3 +1,16 @@
+import "../styles/VoiceControl.css"
+import "../styles/VoiceControlAnimation.css"
+import { useState } from "react";
+
 export default function VoiceControl() {
-    return <div className="voiceControl">VOICE CONTROL</div>
+    const [isSpeaking, setIsSpeaking] = useState(true);
+
+    return (
+     <div className="voiceControl">
+        <div 
+            className={`circle ${isSpeaking ? "speaking" : ""}`}
+            >
+        </div>
+    </div>
+    )
 }

@@ -1,3 +1,9 @@
+:root {
+  --bg: #0a0f1c;
+  --primary: #00eaff;
+  --text: #ccefff;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: 2fr 1fr;
@@ -5,15 +11,20 @@
   height: 100vh;
   gap: 10px;
   padding: 10px;
-   box-sizing: border-box;
-  background: black;
+  box-sizing: border-box;
+  background: var(--bg);
 }
 
 .dashboard > * {
-  border: 1px solid #00ffcc;
-  color: #00ffcc;
+  border: 1px solid var(--primary);
+  color: var(--text);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: monospace;
+
+  box-shadow: 0 0 12px #00eaff88;
+  text-shadow: 0 0 6px #00eaffaa;
+  border-radius: 8px;
+  background: rgba(0, 234, 255, 0.05);
 }
