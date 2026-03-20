@@ -3,7 +3,7 @@ import "../styles/VoiceControlAnimation.css"
 import { useState } from "react";
 
 export default function VoiceControl() {
-    const [isSpeaking, setIsSpeaking] = useState(true);
+    const [isSpeaking, setIsSpeaking] = useState(false);
 
     return (
      <div className="voiceControl">

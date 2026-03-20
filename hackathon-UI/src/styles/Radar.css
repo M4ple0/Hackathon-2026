@@ -22,37 +22,19 @@
   background-size: 30px 30px;
 }
 
-/* Friendly markers */
-.friendly {
+.locationLabel {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  background-color: #00ff00;
-  border-radius: 50%;
-  box-shadow: 0 0 5px #00ff00aa;
-  animation: blinkGreen 1s infinite alternate;
-}
-
-/* Enemy markers */
-.enemy {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  background-color: #ff0000;
-  border-radius: 50%;
-  box-shadow: 0 0 5px #ff0000aa;
-  animation: blinkRed 1s infinite alternate;
-}
-
-/* blinking animations */
-@keyframes blinkGreen {
-  0% { opacity: 0.4; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1.2); }
-}
-
-@keyframes blinkRed {
-  0% { opacity: 0.4; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1.2); }
+  font-size: 60px;
+  font-family: monospace;
+  font-weight: bold;
+  color: #00eaff;              /* stroke color */
+  -webkit-text-stroke: 1px #00eaff55; /* subtle outline */
+  text-shadow: 0 0 5px #00eaff22; /* subtle glow */
+  color: transparent;           /* make fill invisible */
+  transform: translate(-50%, -50%);
+  user-select: none;
+  pointer-events: none;
+  z-index: 5;
 }
 
 /* Drone marker */
@@ -60,13 +42,20 @@
   position: absolute;
   width: 20px;
   height: 20px;
-  background-color: #00eaff;
   border-radius: 50%;
   box-shadow:
     0 0 8px #00eaff88,
     0 0 20px #00eaff44;
   animation: pulseDrone 1.2s infinite alternate;
   z-index: 10;
+}
+
+.droneA {
+  background-color: orangered;
+}
+
+.droneB {
+  background-color: yellowgreen;
 }
 
 /* Pulse animation for drones */
