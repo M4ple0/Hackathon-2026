@@ -1,5 +1,5 @@
 from __future__ import annotations
-import key
+from key import API_KEY
 import json
 import logging
 import os
@@ -315,7 +315,7 @@ class CommandParser:
     def __post_init__(self):
 
         self.client = anthropic.Anthropic(
-            api_key=key.API_KEY
+            api_key=API_KEY
         )
 
     def parse(self, transcript: str) -> dict:
