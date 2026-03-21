@@ -1,18 +1,6 @@
 from main import commands
 import dataset 
 
-def IFF(target):
-    classification = IFF.get(target.lower())
-
-    if classification == "FRIENDLY":
-        return "block"
-    elif classification == "UNKNOWN":
-        return "confirm"
-    elif classification == "HOSTILE":
-        return "confirm"
-    else:
-        return "block"
-
 def validate(self, cmd: dict) -> ValidationResult:
 
     # 1. Low confidence
@@ -55,4 +43,5 @@ def validate(self, cmd: dict) -> ValidationResult:
 
     # All checks passed
     return ValidationResult.allow(cmd, f"Executing {cmd['action']}")
+
 
