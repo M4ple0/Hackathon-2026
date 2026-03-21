@@ -1,3 +1,9 @@
+.voiceControl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .circle {
   width: 62%;
   height: 62%;

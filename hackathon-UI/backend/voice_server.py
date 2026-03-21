@@ -1,38 +1,131 @@
 # voice_server.py
 from fastapi import FastAPI, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from voice_listener import transcribe, confidence_threshold, has_wake_word
+import webrtcvad
+import pyaudio
 import asyncio
-from voice_listener import stt_loop
-import threading
 
 app = FastAPI()
-clients: set[WebSocket] = set()
 
-@app.websocket("/ws/voice")
-async def websocket_endpoint(ws: WebSocket):
-    await ws.accept()
-    clients.add(ws)
+# CORS for React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # dev only
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# -------------------------------
+# Shared state for animation
+# -------------------------------
+is_listening = False
+
+def set_listening(state: bool):
+    global is_listening
+    is_listening = state
+
+# -------------------------------
+# Voice animation endpoint
+# -------------------------------
+@app.get("/voice-status")
+async def voice_status():
+    return JSONResponse({"listening": is_listening})
+
+# -------------------------------
+# Capture utterance with speech detection
+# -------------------------------
+def capture_utterance_with_flag(sample_rate=16000, frame_ms=30, silence_timeout=20):
+    """
+    Capture audio from mic.
+    Returns (audio_bytes, heard_speech)
+    Updates is_listening while user is actually speaking.
+    """
+    global is_listening
+    vad = webrtcvad.Vad(2)
+    audio = pyaudio.PyAudio()
+    frame_bytes = int(sample_rate * frame_ms / 1000) * 2
+    stream = audio.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=sample_rate,
+        input=True,
+        frames_per_buffer=frame_bytes // 2,
+    )
+
+    frames = []
+    silent_frames = 0
+    speaking = False
+
+    while True:
+        frame = stream.read(frame_bytes // 2, exception_on_overflow=False)
+        is_speech = vad.is_speech(frame, sample_rate)
+
+        if is_speech:
+            if not speaking:
+                # first frame of speech → start animation
+                is_listening = True
+            speaking = True
+            silent_frames = 0
+            frames.append(frame)
+        elif speaking:
+            silent_frames += 1
+            frames.append(frame)
+            if silent_frames > silence_timeout:
+                # user stopped speaking → stop animation
+                is_listening = False
+                break
+        else:
+            frames.append(frame)  # capture silence before speech starts
+
+    stream.stop_stream()
+    stream.close()
+    audio.terminate()
+    audio_bytes = b"".join(frames)
+    return audio_bytes, speaking
+
+# Async wrapper
+async def async_capture_utterance():
+    return await asyncio.to_thread(capture_utterance_with_flag)
+
+# -------------------------------
+# WebSocket for commands
+# -------------------------------
+async def listen_for_command(websocket: WebSocket):
+    await websocket.accept()
     try:
         while True:
-            await asyncio.sleep(1)
-    except:
-        pass
-    finally:
-        clients.remove(ws)
+            # Capture audio in thread
+            audio_bytes, heard_speech = await async_capture_utterance()
 
-def send_to_clients(text: str):
-    loop = asyncio.get_event_loop()
-    for ws in list(clients):
-        try:
-            asyncio.run_coroutine_threadsafe(ws.send_text(text), loop)
-        except:
-            clients.remove(ws)
+            # Animate only if real speech detected
+            if heard_speech:
+                set_listening(True)
+            else:
+                set_listening(False)
 
-def handle_command(text: str):
-    print(f"Command accepted: {text}")
-    send_to_clients(text)
+            text, confidence = transcribe(audio_bytes)
 
-if __name__ == "__main__":
-    # run STT in a separate thread so FastAPI remains responsive
-    threading.Thread(target=lambda: stt_loop(handle_command), daemon=True).start()
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+            if confidence >= confidence_threshold and has_wake_word(text):
+                await websocket.send_text(text)
+
+            # Stop animation after sending / processing
+            set_listening(False)
+
+            # Short cooldown before next capture
+            await asyncio.sleep(0.5)
+
+    except Exception as e:
+        print("WebSocket closed:", e)
+
+@app.websocket("/ws")
+async def ws_endpoint(websocket: WebSocket):
+    await listen_for_command(websocket)
+
+# -------------------------------
+# Optional health check
+# -------------------------------
+@app.get("/")
+async def root():
+    return {"status": "Voice server running"}
