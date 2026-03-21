@@ -13,6 +13,7 @@
   padding: 10px;
   box-sizing: border-box;
   background: var(--bg);
+  transition: background-color 0.3s ease;
 }
 
 .dashboard * {
@@ -24,62 +25,110 @@
   color: var(--text);
   display: flex;
   font-family: monospace;
-
   box-shadow: 0 0 12px #00eaff88;
   text-shadow: 0 0 6px #00eaffaa;
   border-radius: 8px;
   background: rgba(0, 234, 255, 0.05);
 }
 
-.dashboard.danger-mode {
+/* danger-mode panel and dashboard style dynamically by data attribute */
+.dashboard.danger-mode[data-danger="yellow"] {
+  --primary: #ffcc00;
+  --text: #fff78c;
+  --bg: #332a00;
+  --danger-border: #ffcc00;
+  --danger-text: #fff78c;
+  --danger-shadow: #ffcc00aa;
+  --danger-bg: rgba(51, 42, 0, 0.2);
+  animation: dashboardPulseYellow 1s infinite;
+}
+
+.dashboard.danger-mode[data-danger="red"] {
   --primary: #ff2a2a;
   --text: #ff4d4d;
   --bg: #1a0000;
+  --danger-border: #ff2a2a;
+  --danger-text: #ff4d4d;
+  --danger-shadow: #ff0000aa;
+  --danger-bg: rgba(26, 0, 0, 0.3);
+  animation: dashboardPulseRed 1s infinite;
 }
 
 .dashboard.danger-mode > * {
-  border-color: #ff2a2a;
-  color: #ff4d4d;
-  box-shadow: 0 0 20px #ff000088;
+  border-color: var(--danger-border);
+  color: var(--danger-text);
   animation: dangerPulse 1s infinite;
 }
 
 @keyframes dangerPulse {
-  0% { box-shadow: 0 0 10px #ff000055; }
-  50% { box-shadow: 0 0 25px #ff0000aa; }
-  100% { box-shadow: 0 0 10px #ff000055; }
+  0% {
+    box-shadow: 0 0 10px #ffcc0055;
+    background-color: rgba(51, 42, 0, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 25px #ffcc00aa;
+    background-color: rgba(51, 42, 0, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 10px #ffcc0055;
+    background-color: rgba(51, 42, 0, 0.05);
+  }
+}
+
+@keyframes dashboardPulse {
+  0% { background-color: #332a00; }
+  50% { background-color: #4d3b00; }
+  100% { background-color: #332a00; }
 }
 
 .warningOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-
+  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
-
   display: flex;
   justify-content: center;
   align-items: center;
-
   z-index: 999;
 }
 
 .warningPopup {
+  background: #332a00;
+  border: 2px solid #ffcc00;
+  padding: 20px 30px;
+  border-radius: 10px;
+  text-align: center;
+  color: #ffcc00;
+  box-shadow: 0 0 30px #ffcc0055;
+  font-family: monospace;
+}
+
+.warning-button {
+  margin: 10px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid #ffcc00;
+  color: black; /* readable text */
+  cursor: pointer;
+}
+
+.warning-button:hover {
+  background: #ffcc00;
+  color: black;
+}
+
+.blockedPopup {
   background: #1a0000;
   border: 2px solid #ff2a2a;
   padding: 20px 30px;
   border-radius: 10px;
-
   text-align: center;
   color: #ff4d4d;
-
   box-shadow: 0 0 30px #ff000088;
+  font-family: monospace;
 }
 
-.warningPopup button {
+.blocked-button {
   margin: 10px;
   padding: 6px 12px;
   background: transparent;
@@ -88,7 +137,23 @@
   cursor: pointer;
 }
 
-.warningPopup button:hover {
+.blocked-button:hover {
   background: #ff2a2a;
   color: black;
+}
+
+.dashboard button {
+  font-family: monospace;
+  border-radius: 4px;
+  border: 1px solid var(--primary);
+  padding: 6px 12px;
+  cursor: pointer;
+  background: rgba(0, 234, 255, 0.1);
+  color: var(--text);
+}
+
+.dashboard button:hover {
+  background: var(--primary);
+  color: black;
+  box-shadow: 0 0 10px var(--primary);
 }
