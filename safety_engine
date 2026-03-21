@@ -1,0 +1,58 @@
+from main import commands
+import dataset 
+
+def IFF(target):
+    classification = IFF.get(target.lower())
+
+    if classification == "FRIENDLY":
+        return "block"
+    elif classification == "UNKNOWN":
+        return "confirm"
+    elif classification == "HOSTILE":
+        return "confirm"
+    else:
+        return "block"
+
+def validate(self, cmd: dict) -> ValidationResult:
+
+    # 1. Low confidence
+    if cmd["confidence"] < 0.65:
+        return ValidationResult.block(cmd, "Command unclear, please repeat")
+
+    # 2. Ambiguous
+    if cmd["ambiguous"]:
+        return ValidationResult.block(cmd, "Ambiguous command, please clarify")
+
+    # 3. Unknown action
+    if cmd["action"] == "unknown":
+        return ValidationResult.block(cmd, "Unrecognised command")
+
+    # 4. Invalid drone
+    if cmd["drone"] not in {*VALID_DRONES, "all", None}:
+        return ValidationResult.block(cmd, f"Unknown drone '{cmd['drone']}'")
+
+    # 5. Altitude out of bounds
+    if cmd["altitude_m"] is not None:
+        if cmd["altitude_m"] <= 0 or cmd["altitude_m"] > 120:
+            return ValidationResult.block(cmd, "Altitude exceeds ceiling — must be 1-120m")
+
+    # 6. Waypoint not found
+    if cmd["action"] == "fly_to" and cmd["target"] is not None:
+        if not self.resolve_waypoint(cmd["target"]) and not self.resolve_entity(cmd["target"]):
+            return ValidationResult.block(cmd, f"Waypoint '{cmd['target']}' not in battlespace")
+
+    # 7. IFF check
+    if cmd["action"] in ENGAGEMENT_ACTIONS:
+        entity = self.resolve_entity(cmd["target"])
+        if entity is None:
+            return ValidationResult.block(cmd, "Target not in IFF database")
+        if entity.classification == Classification.FRIENDLY:
+            return ValidationResult.block(cmd, "Cannot engage friendly unit")
+        if entity.classification == Classification.UNKNOWN:
+            return ValidationResult.confirm(cmd, "Target is UNKNOWN — confirm?")
+        if entity.classification == Classification.HOSTILE:
+            return ValidationResult.confirm(cmd, "Engaging HOSTILE — confirm?")
+
+    # All checks passed
+    return ValidationResult.allow(cmd, f"Executing {cmd['action']}")
+
