@@ -15,6 +15,8 @@ prompt_file = open("parser_prompt.txt", "r+")
 
 SYSTEM_PROMPT =  prompt_file.read()
 
+prompt_file.close
+
 @dataclass
 class CommandParser:
 
@@ -129,18 +131,11 @@ if __name__ == "__main__":
 
     parser = CommandParser()
 
-    tests = [
-        "Take drone Alpha up to 20 metres",
-        "Fly to Waypoint Bravo",
-        "Send both drones to Charlie at 50 feet",
-        "Take off and investigate the unknown contact",
-        "Engage Tango-1 with drone Bravo",
-        "Engage Falcon-1",                          # should still parse — safety engine blocks it
-        "Come home",                                # RTL alias
-        "Hold position",                            # hover alias
-        "uh... send the thing to... bravo maybe?",  # low confidence
-        "",                                         # empty — fallback
-    ]
+    prompt_file = open("practice_commands.txt", "r+")
+
+    tests = prompt_file.readlines()
+
+    prompt_file.close
 
     for t in tests:
 
