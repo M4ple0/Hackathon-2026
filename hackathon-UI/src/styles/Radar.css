@@ -1,0 +1,65 @@
+.mapPanel {
+  background: #0a0f1c;
+  border: 1px solid #00eaff;
+  border-radius: 8px;
+  box-shadow: 0 0 15px #00eaff33;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+
+.mapContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(#003366 1px, transparent 1px),
+                    linear-gradient(90deg, #003366 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+
+.locationLabel {
+  position: absolute;
+  font-size: 60px;
+  font-family: monospace;
+  font-weight: bold;
+  color: #00eaff;              /* stroke color */
+  -webkit-text-stroke: 1px #00eaff55; /* subtle outline */
+  text-shadow: 0 0 5px #00eaff22; /* subtle glow */
+  color: transparent;           /* make fill invisible */
+  transform: translate(-50%, -50%);
+  user-select: none;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Drone marker */
+.drone {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-shadow:
+    0 0 8px #00eaff88,
+    0 0 20px #00eaff44;
+  animation: pulseDrone 1.2s infinite alternate;
+  z-index: 10;
+}
+
+.droneA {
+  background-color: orangered;
+}
+
+.droneB {
+  background-color: yellowgreen;
+}
+
+/* Pulse animation for drones */
+@keyframes pulseDrone {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.2); opacity: 1; }
+}

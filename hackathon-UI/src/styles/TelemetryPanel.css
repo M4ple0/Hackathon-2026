@@ -1,0 +1,53 @@
+.telemetryPanel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  width: 100%;
+  height: 100%;
+
+  align-self: stretch;
+  justify-self: stretch;
+}
+
+.droneCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  width: 100%;
+
+  padding: 10px;
+  border: 1px solid #00eaff;
+  border-radius: 6px;
+  background: rgba(0, 234, 255, 0.05);
+}
+
+.droneTitle {
+  margin-bottom: 6px;
+  font-size: 14px;
+  text-shadow: 0 0 6px #00eaffaa;
+}
+
+.telemetryItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  font-size: 12px;
+  margin: 4px 0;
+}
+
+.label {
+  opacity: 0.7;
+}
+
+.value {
+  text-align: right;
+}
+
+.positionValues {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}

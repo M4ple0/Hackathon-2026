@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+pyaudio
+webrtcvad
+numpy
+faster-whisper
+pyttsx3
