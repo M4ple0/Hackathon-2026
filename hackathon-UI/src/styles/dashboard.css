@@ -31,6 +31,7 @@
   background: rgba(0, 234, 255, 0.05);
 }
 
+/* danger-mode panel and dashboard style dynamically by data attribute */
 .dashboard.danger-mode[data-danger="yellow"] {
   --primary: #ffcc00;
   --text: #fff78c;
@@ -107,7 +108,7 @@
   padding: 6px 12px;
   background: transparent;
   border: 1px solid #ffcc00;
-  color: black;
+  color: black; /* readable text */
   cursor: pointer;
 }
 
