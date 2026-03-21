@@ -19,48 +19,31 @@ export default function Dashboard() {
       className={`dashboard ${dangerColor ? "danger-mode" : ""}`}
       data-danger={dangerColor}
     >
-      {/* 🔴 BLOCKED POPUP */}
       {blocked && (
         <div className="warningOverlay">
           <div className="blockedPopup">
             <h2>BLOCKED COMMAND</h2>
             <p>{blocked}</p>
-            <button className="blocked-button" onClick={() => setBlocked(null)}>Close</button>
           </div>
         </div>
       )}
 
-      {/* 🟡 WARNING POPUP */}
       {warning && (
         <div className="warningOverlay">
           <div className="warningPopup">
             <h2>⚠ HIGH RISK ACTION</h2>
             <p>Confirm command execution</p>
-            <button className="warning-button" onClick={() => setWarning(false)}>Confirm</button>
-            <button className="warning-button" onClick={() => setWarning(false)}>Cancel</button>
           </div>
         </div>
       )}
 
       <Radar />
       <VoiceControl />
-      <DroneStatus />
+      <DroneStatus 
+      onWarning={() => setWarning(true)}
+      onBlocked={(msg) => setBlocked(msg)}
+      />
       <TelemertyPanel />
-
-      {/* TEMP TEST BUTTONS */}
-      <button 
-        onClick={() => setWarning(true)} 
-        style={{ position: "absolute", bottom: 50, right: 10 }}
-      >
-        Trigger Warning
-      </button>
-
-      <button 
-        onClick={() => setBlocked("Drone Alpha cannot attack without target!")} 
-        style={{ position: "absolute", bottom: 10, right: 10 }}
-      >
-        Trigger Blocked
-      </button>
     </div>
   );
 }

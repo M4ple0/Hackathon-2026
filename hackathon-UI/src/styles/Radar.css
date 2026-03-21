@@ -27,17 +27,16 @@
   font-size: 60px;
   font-family: monospace;
   font-weight: bold;
-  color: #00eaff;              /* stroke color */
-  -webkit-text-stroke: 1px #00eaff55; /* subtle outline */
-  text-shadow: 0 0 5px #00eaff22; /* subtle glow */
-  color: transparent;           /* make fill invisible */
+  color: #00eaff;
+  -webkit-text-stroke: 1px #00eaff55;
+  text-shadow: 0 0 5px #00eaff22;
+  color: transparent;
   transform: translate(-50%, -50%);
   user-select: none;
   pointer-events: none;
   z-index: 5;
 }
 
-/* Drone marker */
 .drone {
   position: absolute;
   width: 20px;
@@ -58,8 +57,25 @@
   background-color: yellowgreen;
 }
 
-/* Pulse animation for drones */
 @keyframes pulseDrone {
   0% { transform: scale(1); opacity: 0.8; }
   100% { transform: scale(1.2); opacity: 1; }
+}
+
+.noGoZone {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 0, 0, 0.3);
+  transform: translate(-50%, -50%);
+}
+
+.noGoZone.warning {
+  background: rgba(255, 165, 0, 0.3);
+}
+
+.locationLabel {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: white;
 }
