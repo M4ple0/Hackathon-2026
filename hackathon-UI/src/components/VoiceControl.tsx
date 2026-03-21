@@ -1,4 +1,3 @@
-// VoiceControl.tsx
 import { useState, useEffect } from "react";
 import "../styles/VoiceControl.css";
 import "../styles/VoiceControlAnimation.css";
