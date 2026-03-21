@@ -7,18 +7,37 @@ import "../styles/Dashboard.css";
 
 export default function Dashboard() {
   const [warning, setWarning] = useState(false);
+  const [blocked, setBlocked] = useState<string | null>(null);
+
+  // Determine danger color based on type
+  let dangerColor = "";
+  if (blocked) dangerColor = "red";
+  else if (warning) dangerColor = "yellow";
 
   return (
-    <div className={`dashboard ${warning ? "danger-mode" : ""}`}>
-      
-      {/* 🔥 POPUP */}
+    <div
+      className={`dashboard ${dangerColor ? "danger-mode" : ""}`}
+      data-danger={dangerColor}
+    >
+      {/* 🔴 BLOCKED POPUP */}
+      {blocked && (
+        <div className="warningOverlay">
+          <div className="blockedPopup">
+            <h2>BLOCKED COMMAND</h2>
+            <p>{blocked}</p>
+            <button className="blocked-button" onClick={() => setBlocked(null)}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* 🟡 WARNING POPUP */}
       {warning && (
         <div className="warningOverlay">
           <div className="warningPopup">
             <h2>⚠ HIGH RISK ACTION</h2>
             <p>Confirm command execution</p>
-            <button onClick={() => setWarning(false)}>Confirm</button>
-            <button onClick={() => setWarning(false)}>Cancel</button>
+            <button className="warning-button" onClick={() => setWarning(false)}>Confirm</button>
+            <button className="warning-button" onClick={() => setWarning(false)}>Cancel</button>
           </div>
         </div>
       )}
@@ -28,12 +47,19 @@ export default function Dashboard() {
       <DroneStatus />
       <TelemertyPanel />
 
-      {/* TEMP TEST BUTTON */}
+      {/* TEMP TEST BUTTONS */}
       <button 
         onClick={() => setWarning(true)} 
-        style={{ position: "absolute", bottom: 10, right: 10 }}
+        style={{ position: "absolute", bottom: 50, right: 10 }}
       >
         Trigger Warning
+      </button>
+
+      <button 
+        onClick={() => setBlocked("Drone Alpha cannot attack without target!")} 
+        style={{ position: "absolute", bottom: 10, right: 10 }}
+      >
+        Trigger Blocked
       </button>
     </div>
   );
