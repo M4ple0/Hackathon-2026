@@ -1,4 +1,3 @@
-# voice_server.py
 from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -17,25 +16,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# -------------------------------
-# Shared state for animation
-# -------------------------------
 is_listening = False
 
 def set_listening(state: bool):
     global is_listening
     is_listening = state
 
-# -------------------------------
-# Voice animation endpoint
-# -------------------------------
 @app.get("/voice-status")
 async def voice_status():
     return JSONResponse({"listening": is_listening})
 
-# -------------------------------
-# Capture utterance with speech detection
-# -------------------------------
 def capture_utterance_with_flag(sample_rate=16000, frame_ms=30, silence_timeout=20):
     """
     Capture audio from mic.
@@ -64,7 +54,6 @@ def capture_utterance_with_flag(sample_rate=16000, frame_ms=30, silence_timeout=
 
         if is_speech:
             if not speaking:
-                # first frame of speech → start animation
                 is_listening = True
             speaking = True
             silent_frames = 0
@@ -73,11 +62,10 @@ def capture_utterance_with_flag(sample_rate=16000, frame_ms=30, silence_timeout=
             silent_frames += 1
             frames.append(frame)
             if silent_frames > silence_timeout:
-                # user stopped speaking → stop animation
                 is_listening = False
                 break
         else:
-            frames.append(frame)  # capture silence before speech starts
+            frames.append(frame)
 
     stream.stop_stream()
     stream.close()
@@ -85,13 +73,9 @@ def capture_utterance_with_flag(sample_rate=16000, frame_ms=30, silence_timeout=
     audio_bytes = b"".join(frames)
     return audio_bytes, speaking
 
-# Async wrapper
 async def async_capture_utterance():
     return await asyncio.to_thread(capture_utterance_with_flag)
 
-# -------------------------------
-# WebSocket for commands
-# -------------------------------
 async def listen_for_command(websocket: WebSocket):
     await websocket.accept()
     try:
@@ -123,9 +107,6 @@ async def listen_for_command(websocket: WebSocket):
 async def ws_endpoint(websocket: WebSocket):
     await listen_for_command(websocket)
 
-# -------------------------------
-# Optional health check
-# -------------------------------
 @app.get("/")
 async def root():
     return {"status": "Voice server running"}
