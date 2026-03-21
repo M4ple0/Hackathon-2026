@@ -1,306 +1,15 @@
 from __future__ import annotations
-from key import API_KEY
 import json
 import logging
 import os
 import re
+import key
 from dataclasses import dataclass
 from typing import Optional
 
 import anthropic
 
 logger = logging.getLogger(__name__)
-
-WAYPOINTS = ["Alpha", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel"]
- 
-ENTITIES = [
-    {"id": "f-01", "name": "Falcon-1",  "classification": "FRIENDLY"},
-    {"id": "f-02", "name": "Eagle-2",   "classification": "FRIENDLY"},
-    {"id": "u-01", "name": "Contact-3", "classification": "UNKNOWN"},
-    {"id": "h-01", "name": "Tango-1",   "classification": "HOSTILE"},
-    {"id": "h-02", "name": "Tango-2",   "classification": "HOSTILE"},
-]
- 
-DRONES = ["Alpha", "Bravo"]
- 
-# ---------------------------------------------------------------------------
-# Action keyword map — order matters, more specific phrases first
-# ---------------------------------------------------------------------------
- 
-ACTIONS: dict[str, list[str]] = {
-    "takeoff":     ["take off", "takeoff", "take-off", "launch", "lift off", "liftoff"],
-    "land":        ["land", "set down", "touch down", "touchdown"],
-    "fly_to":      ["fly to", "go to", "send to", "move to", "navigate to", "head to",
-                    "proceed to", "travel to", "route to"],
-    "rtl":         ["return to launch", "return to base", "return home",
-                    "come home", "go home", "rtl", "abort mission"],
-    "hover":       ["hold position", "hold", "hover", "stay", "freeze", "stop moving",
-                    "maintain position"],
-    "engage":      ["engage", "attack", "fire on", "fire at", "shoot", "destroy", "eliminate"],
-    "investigate": ["investigate", "check out", "check on", "look at", "observe",
-                    "recon", "scout"],
-    "track":       ["track", "follow", "tail", "shadow", "maintain lock on"],
-}
- 
-# Phonetic / STT alias normalisation — applied before parsing
-STT_ALIASES: dict[str, str] = {
-    # Entity aliases
-    "tango one":    "Tango-1",
-    "tango 1":      "Tango-1",
-    "tango-1":      "Tango-1",
-    "tango two":    "Tango-2",
-    "tango 2":      "Tango-2",
-    "tango-2":      "Tango-2",
-    "eagle two":    "Eagle-2",
-    "eagle 2":      "Eagle-2",
-    "falcon one":   "Falcon-1",
-    "falcon 1":     "Falcon-1",
-    "contact three":"Contact-3",
-    "contact 3":    "Contact-3",
-    # Drone aliases
-    "drone one":    "drone Alpha",
-    "drone 1":      "drone Alpha",
-    "drone a":      "drone Alpha",
-    "drone two":    "drone Bravo",
-    "drone 2":      "drone Bravo",
-    "drone b":      "drone Bravo",
-    # Waypoint spoken forms
-    "way point":    "waypoint",
-    "check point":  "checkpoint",
-}
- 
-# ---------------------------------------------------------------------------
-# Compiled patterns
-# ---------------------------------------------------------------------------
- 
-ALTITUDE_RE = re.compile(
-    r"(\d+(?:\.\d+)?)\s*(meters|metres|meter|metre|m|feet|foot|ft|kilometers|kilometres|km)",
-    re.I,
-)
- 
-COMPOUND_SPLIT_RE = re.compile(
-    r"\b(and then|and after that|then|after that|and also|also)\b",
-    re.I,
-)
- 
-# Built dynamically from WAYPOINTS and ENTITIES so adding new ones just works
-_waypoint_pattern = "|".join(re.escape(w) for w in sorted(WAYPOINTS, key=len, reverse=True))
-_entity_pattern   = "|".join(
-    re.escape(e["name"]) for e in sorted(ENTITIES, key=lambda e: len(e["name"]), reverse=True)
-)
-_entity_id_pattern = "|".join(
-    re.escape(e["id"]) for e in sorted(ENTITIES, key=lambda e: len(e["id"]), reverse=True)
-)
-_drone_pattern = "|".join(re.escape(d) for d in sorted(DRONES, key=len, reverse=True))
- 
-WAYPOINT_RE = re.compile(rf"\b({_waypoint_pattern})\b", re.I)
-ENTITY_RE   = re.compile(rf"\b({_entity_pattern}|{_entity_id_pattern})\b", re.I)
-DRONE_RE    = re.compile(rf"\b({_drone_pattern})\b", re.I)
- 
-# Lookup tables (lowercase key → canonical form)
-WAYPOINT_LOOKUP = {w.lower(): w for w in WAYPOINTS}
-ENTITY_LOOKUP: dict[str, str] = {}
-for e in ENTITIES:
-    ENTITY_LOOKUP[e["name"].lower()] = e["name"]
-    ENTITY_LOOKUP[e["id"].lower()]   = e["name"]
- 
-# ---------------------------------------------------------------------------
-# Normalisation
-# ---------------------------------------------------------------------------
- 
-def _normalise(text: str) -> str:
-    """Apply STT alias substitutions before parsing."""
-    t = text.lower().strip()
-    # Apply longest aliases first to avoid partial replacements
-    for alias, canonical in sorted(STT_ALIASES.items(), key=lambda x: len(x[0]), reverse=True):
-        t = t.replace(alias, canonical.lower())
-    return t
- 
-# ---------------------------------------------------------------------------
-# Detection helpers
-# ---------------------------------------------------------------------------
- 
-def detect_action(text: str) -> tuple[Optional[str], int]:
-    """
-    Returns (action, match_start) or (None, -1).
-    match_start lets compound splitting know where the action was found.
-    """
-    t = text.lower()
-    # Sort by phrase length descending so "fire on" matches before "fire"
-    candidates = [
-        (action, phrase)
-        for action, phrases in ACTIONS.items()
-        for phrase in sorted(phrases, key=len, reverse=True)
-    ]
-    for action, phrase in candidates:
-        idx = t.find(phrase)
-        if idx != -1:
-            return action, idx
-    return None, -1
- 
- 
-def detect_drone(text: str) -> Optional[str]:
-    t = text.lower()
-    if re.search(r"\b(both drones?|all drones?)\b", t):
-        return "all"
-    # Require "drone <name>" prefix to avoid confusing drone names with waypoint names
-    # (Alpha and Bravo appear in both lists)
-    m = re.search(rf"\bdrone\s+({'|'.join(re.escape(d) for d in DRONES)})\b", t, re.I)
-    if m:
-        return m.group(1).capitalize()
-    # Also match "<name> drone" form e.g. "Alpha drone"
-    m = re.search(rf"\b({'|'.join(re.escape(d) for d in DRONES)})\s+drone\b", t, re.I)
-    if m:
-        return m.group(1).capitalize()
-    return None
- 
- 
-def detect_waypoint(text: str) -> Optional[str]:
-    m = WAYPOINT_RE.search(text)
-    return WAYPOINT_LOOKUP.get(m.group(1).lower()) if m else None
- 
- 
-def detect_entity(text: str) -> Optional[str]:
-    m = ENTITY_RE.search(text)
-    return ENTITY_LOOKUP.get(m.group(1).lower()) if m else None
- 
- 
-def detect_target(text: str) -> Optional[str]:
-    """Waypoints take priority for navigation actions; entities for engagement."""
-    return detect_waypoint(text) or detect_entity(text)
- 
- 
-def parse_altitude(text: str) -> Optional[float]:
-    m = ALTITUDE_RE.search(text)
-    if not m:
-        return None
-    value = float(m.group(1))
-    unit  = m.group(2).lower()
-    if unit in ("feet", "foot", "ft"):
-        value = round(value * 0.3048, 1)
-    elif unit in ("kilometers", "kilometres", "km"):
-        value = round(value * 1000, 1)
-    else:
-        value = round(value, 1)
-    return value
- 
- 
-def _confidence(action, drone, target, text) -> float:
-    """
-    Score based on how much was resolved vs left ambiguous.
-    Higher = more confident.
-    """
-    score = 0.70  # baseline for a matched action
-    if drone and drone != "all":
-        score += 0.10
-    elif drone == "all":
-        score += 0.08
-    if target:
-        score += 0.10
-    if parse_altitude(text) is not None:
-        score += 0.05
-    # Penalise if the text has filler/uncertainty words
-    uncertainty_words = ["maybe", "perhaps", "i think", "possibly", "uh", "um", "like"]
-    if any(w in text.lower() for w in uncertainty_words):
-        score -= 0.15
-    return round(min(max(score, 0.30), 0.95), 2)
- 
-# ---------------------------------------------------------------------------
-# Single-segment parser
-# ---------------------------------------------------------------------------
- 
-def _parse_segment(text: str, raw_input: str) -> Optional[dict]:
-    """Parse a single (non-compound) command segment."""
-    normalised = _normalise(text)
-    action, _ = detect_action(normalised)
-    if not action:
-        return None
- 
-    # Run structural detections on the normalised text (STT aliases applied)
-    # but pass it as-is since our regexes are all case-insensitive
-    drone    = detect_drone(normalised)
-    altitude = parse_altitude(normalised)
- 
-    # For engagement actions, prefer entity over waypoint
-    if action in ("engage", "investigate", "track"):
-        target = detect_entity(normalised) or detect_waypoint(normalised)
-    else:
-        target = detect_target(normalised)
- 
-    ambiguous = (drone is None and len(DRONES) > 1) or \
-                (action in ("fly_to",) and target is None)
- 
-    return {
-        "action":       action,
-        "drone":        drone,
-        "target":       target,
-        "altitude_m":   altitude,
-        "confidence":   _confidence(action, drone, target, normalised),
-        "ambiguous":    ambiguous,
-        "compound":     False,
-        "sub_commands": None,
-        "raw_input":    raw_input,
-    }
- 
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
- 
-def fast_parse(text: str) -> Optional[dict]:
-    """
-    Attempt to parse text deterministically.
-    Returns a command dict on success, or None if the input is too
-    ambiguous/complex for regex (caller should fall back to LLM).
-    """
-    if not text or not text.strip():
-        return None
- 
-    raw = text.strip()
-    normalised = _normalise(raw)
- 
-    # --- Compound detection ---
-    parts = COMPOUND_SPLIT_RE.split(normalised)
-    # split() includes the delimiter groups — keep only non-delimiter parts
-    segments = [p.strip() for p in parts
-                if p.strip() and not COMPOUND_SPLIT_RE.match(p.strip())]
- 
-    if len(segments) > 1:
-        sub_cmds = []
-        for seg in segments:
-            parsed = _parse_segment(seg, raw)
-            if parsed:
-                sub_cmds.append(parsed)
- 
-        if not sub_cmds:
-            return None  # couldn't parse any segment → hand to LLM
- 
-        # Detect conflicting sub-commands (e.g. takeoff + land)
-        actions_found = {s["action"] for s in sub_cmds}
-        conflicting = {"takeoff", "land"}.issubset(actions_found) or \
-                      {"takeoff", "rtl"}.issubset(actions_found)
- 
-        avg_confidence = round(sum(s["confidence"] for s in sub_cmds) / len(sub_cmds), 2)
- 
-        return {
-            "action":       None,
-            "drone":        None,
-            "target":       None,
-            "altitude_m":   None,
-            "confidence":   avg_confidence,
-            "ambiguous":    conflicting,
-            "compound":     True,
-            "sub_commands": sub_cmds,
-            "raw_input":    raw,
-        }
- 
-    # --- Single command ---
-    result = _parse_segment(normalised, raw)
- 
-    # If confidence is too low, let LLM handle it
-    if result is None or result["confidence"] < 0.55:
-        return None
- 
-    return result
 
 prompt_file = open("parser_prompt.txt", "r+")
 
@@ -315,7 +24,7 @@ class CommandParser:
     def __post_init__(self):
 
         self.client = anthropic.Anthropic(
-            api_key=API_KEY
+            api_key=key.API_KEY
         )
 
     def parse(self, transcript: str) -> dict:
@@ -327,8 +36,8 @@ class CommandParser:
         if not transcript:
             return self._fallback(transcript, reason="empty input")
         
-        fast = fast_parse(transcript) 
-        if fast: return fast
+        #fast = fast_parse(transcript) 
+        #if fast: return fast
  
         try:
             response = self.client.messages.create(
