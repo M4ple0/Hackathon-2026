@@ -83,15 +83,19 @@ class CommandParser:
  
         # Ensure all expected keys are present (defensive defaults)
         defaults = {
-            "action":       "unknown",
-            "drone":        None,
-            "target":       None,
-            "altitude_m":   None,
-            "confidence":   0.5,
-            "ambiguous":    False,
+            "action":        "unknown",
+            "drone":         None,
+            "target":        None,
+            "altitude_m":    None,
+            "direction":     None,
+            "distance_m":    None,
+            "confidence":    0.5,
+            "ambiguous":     False,
             "contradictory": False,
-            "compound":     False,
-            "sub_commands": None,
+            "compound":      False,
+            "sub_commands":  None,
+            "rejected":      False,
+            "reject_reason": None,
         }
         for key, value in defaults.items():
             cmd.setdefault(key, value)
@@ -104,16 +108,19 @@ class CommandParser:
         """Return a safe 'unknown' command when parsing fails entirely."""
         logger.warning("Parser fallback (%s) for: %r", reason, transcript)
         return {
-            "action":       "unknown",
-            "drone":        None,
-            "target":       None,
-            "altitude_m":   None,
-            "confidence":   0.0,
-            "ambiguous":    False,
+            "action":        "unknown",
+            "drone":         None,
+            "target":        None,
+            "altitude_m":    None,
+            "direction":     None,
+            "distance_m":    None,
+            "confidence":    0.5,
+            "ambiguous":     False,
             "contradictory": False,
-            "compound":     False,
-            "sub_commands": None,
-            "raw_input":    transcript,
+            "compound":      False,
+            "sub_commands":  None,
+            "rejected":      False,
+            "reject_reason": None,
         }
 
 if __name__ == "__main__":
