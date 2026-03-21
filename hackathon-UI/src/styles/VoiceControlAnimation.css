@@ -1,0 +1,42 @@
+.circle.speaking {
+  animation: pulse 0.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow:
+      0 0 10px #00eaff88,
+      0 0 30px #00eaff33;
+  }
+
+  50% {
+    transform: scale(1.08);
+    box-shadow:
+      0 0 20px #00eaff,
+      0 0 60px #00eaff66;
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 10px #00eaff88,
+      0 0 30px #00eaff33;
+  }
+}
+
+
+.circle.speaking::after {
+  animation: ripple 1s infinite;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
