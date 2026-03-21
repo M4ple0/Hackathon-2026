@@ -41,6 +41,10 @@ def validate(self, cmd: dict) -> ValidationResult:
         if entity.classification == Classification.HOSTILE:
             return ValidationResult.confirm(cmd, "Engaging HOSTILE — confirm?")
 
+    # 8. Contradiction
+    if cmd["contradictory"]:
+        return ValidationResult.block(cmd, "Contradictory command, please clarify")
+
     # All checks passed
     return ValidationResult.allow(cmd, f"Executing {cmd['action']}")
 

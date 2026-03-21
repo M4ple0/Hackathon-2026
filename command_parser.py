@@ -89,6 +89,7 @@ class CommandParser:
             "altitude_m":   None,
             "confidence":   0.5,
             "ambiguous":    False,
+            "contradictory": False,
             "compound":     False,
             "sub_commands": None,
         }
@@ -109,6 +110,7 @@ class CommandParser:
             "altitude_m":   None,
             "confidence":   0.0,
             "ambiguous":    False,
+            "contradictory": False,
             "compound":     False,
             "sub_commands": None,
             "raw_input":    transcript,
